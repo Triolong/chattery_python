@@ -68,3 +68,55 @@
     text-decoration: none;
     cursor: pointer;
 }
+
+.inline-elements > div {
+    display: inline-block; /* Элементы встанут в одну строку */
+    margin-right: 10px; /* Отступ между элементами */
+}
+
+.add-user-input {
+    width: calc(100% - 40px);
+    max-width: 300px;
+    margin: 0 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.add-user-button {
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 10px;
+    cursor: pointer;
+    font-size: 20px;
+    margin: 5px 0;
+}
+
+.add-user-button:hover {
+    background: #2980b9;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+}
+
+.delete-user-button {
+    background: #ff0000;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 10px;
+    cursor: pointer;
+    font-size: 20px;
+    margin: 5px 0;
+}
+
+.delete-user-button:hover {
+    background: #cc0000;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+}

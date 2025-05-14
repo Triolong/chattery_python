@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>{{ room.label }} - Collaborators:</h1>
+    <h1>{{ room.label }} - Collaborators: {{ collab_list_len }} found</h1>
     <hr>
     <ul>
         {% for collaborator in collab_list %}

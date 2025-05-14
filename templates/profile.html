@@ -11,7 +11,7 @@
         {% for room in rooms_list %}
             <div class="container">
                 <a href="/room/{{ room.id }}" class="navbar navbar-brand"><h3>{{ room.label }}</h3></a>
-                <p>Collaborators: {{ collaborators_amount }}</p>
+                <p>Collaborators: {{ collaborators_amount_list[rooms_list.index(room)] }}</p>
             </div>
         {% endfor %}
     {% endif %}

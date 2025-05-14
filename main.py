@@ -114,7 +114,7 @@ def logout():
 def profile(user_id):
     rooms_dict = {}
     rooms_list = []
-
+    col_am_list = []
     db_sess = db_session.create_session()
     try:
         with open("data/rooms_id_collaborators.json", "r", encoding="utf-8") as json_file:
@@ -125,21 +125,21 @@ def profile(user_id):
                         if user_id in dict[i]:
                             rooms_dict[f"{db_sess.query(Room).get(int(i))}"] = dict[i]
                             rooms_list.append(db_sess.query(Room).get(int(i)))
+                            col_am_list.append(len(dict[i])) if dict[i] is not None else 0
                     except ValueError:
                         rooms_list = []
-                    try:
-                        col_am = len(dict[i]) if dict[i] is not None else 0
-                    except TypeError:
-                        col_am = 0
             except json.decoder.JSONDecodeError:
                 rooms_list = []
-                col_am = 0
+                col_am_list = []
 
     except FileNotFoundError:
         print("JSON file for collaborators not found.")
 
-    return render_template("profile.html", title="Chattery - Profile", user=db_sess.query(User).get(user_id),
-                           rooms_list=rooms_list, collaborators_amount=col_am)
+    db_sess.close()
+
+    return render_template("profile.html", title="Chattery - Profile",
+                           user=db_sess.query(User).get(user_id),
+                           rooms_list=rooms_list, collaborators_amount_list=col_am_list)
 
 
 @app.route('/create_room', methods=["GET", "POST"])
@@ -211,7 +211,16 @@ def collaborators_list(room_id):
     except FileNotFoundError:
         print("collaborators file not found")
     db_sess.close()
-    return render_template("collaborators.html", title=f"{room.label} - Collaborators", room=room, collab_list=collab_list)
+    return render_template("collaborators.html", title=f"{room.label} - Collaborators", room=room,
+                           collab_list=collab_list, collab_list_len=len(collab_list))
+
+
+@app.route("/room/<int:room_id>/options")
+def room_options(room_id):
+    db_sess = db_session.create_session()
+    room = db_sess.query(Room).get(room_id)
+    db_sess.close()
+    return render_template("room_options.html", title=f"{room.label} - Options", room=room)
 
 # ======================================================================================================================
 
@@ -248,9 +257,58 @@ def handle_send_button(room_id):
             except KeyError:
                 messages_dict[f"{room_id}"] = [[message.text, message.author_id, message.sent_date]]
             json.dump(messages_dict, json_file)
+        db_sess.close()
         return redirect(f"/room/{room.id}")
     return render_template("showroom.html", title=room.label, messages=messages_list)
 
+
+@app.route("/handle_add_collaborator/<int:room_id>", methods=["GET", "POST"])
+@login_required
+def add_collaborator(room_id):
+    db_sess = db_session.create_session()
+    room = db_sess.query(Room).get(room_id)
+    user_id = int(request.form.get("user_input"))
+    with open("data/rooms_id_collaborators.json", "r", encoding="utf-8") as json_file:
+        try:
+            collab_dict = json.load(json_file)
+        except json.decoder.JSONDecodeError:
+            collab_dict = {}
+    user = db_sess.query(User).get(user_id)
+    if user is not None:
+        with open("data/rooms_id_collaborators.json", "w", encoding="utf-8") as json_file:
+            if user_id not in collab_dict[str(room_id)]:
+                collab_dict[str(room_id)].append(user_id)
+            json.dump(collab_dict, json_file)
+    else:
+        return render_template("room_options.html", title=f"{room.label}", room=room,
+                               message1="There is no such user.")
+    return redirect(f"/room/{room_id}")
+
+
+@app.route("/handle_delete_collaborator/<int:room_id>", methods=["GET", "POST"])
+@login_required
+def delete_collaborator(room_id):
+    db_sess = db_session.create_session()
+    room = db_sess.query(Room).get(room_id)
+    user_id = request.form.get("user_input_delete")
+    with open("data/rooms_id_collaborators.json", "r", encoding="utf-8") as json_file:
+        try:
+            collab_dict = json.load(json_file)
+        except json.decoder.JSONDecodeError:
+            collab_dict = {}
+    user = db_sess.query(User).get(user_id)
+    if user is not None:
+        with open("data/rooms_id_collaborators.json", "w", encoding="utf-8") as json_file:
+            if int(user_id) in collab_dict[str(room_id)]:
+                collab_dict[str(room_id)].remove(int(user_id))
+            else:
+                return render_template("room_options.html", title=f"{room.label}", room=room,
+                                       message2="There is no such user in this room")
+            json.dump(collab_dict, json_file)
+    else:
+        return render_template("room_options.html", title=f"{room.label}", room=room,
+                               message2="There is no such user.")
+    return redirect(f"/room/{room_id}")
 
 @app.errorhandler(401)
 def not_authorized(error):

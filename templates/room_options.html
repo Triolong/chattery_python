@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ room.label }} - Options</h1>
+    <form action="/handle_add_collaborator/{{ room.id }}" method="post">
+        <input class="add-user-input" name="user_input" type="text" placeholder="Enter collaborator's ID here.">
+        <button class="add-user-button" name="add_usr_btn" type="submit">Add collaborator</button>
+    </form>
+    <p>{{ message1 }}</p>
+    <form action="/handle_delete_collaborator/{{ room.id }}" method="post">
+        <input class="add-user-input" name="user_input_delete" type="text" placeholder="Enter collaborator's ID here.">
+        <button class="delete-user-button" name="add_usr_btn" type="submit">Delete collaborator</button>
+    </form>
+    <p>{{ message2 }}</p>
+{% endblock %}
