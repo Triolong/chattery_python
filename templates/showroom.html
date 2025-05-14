@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1 align="center">{{ room.label }}</h1><a class="navbar navbar-brand"><h5>Collaborators</h5></a>
+    <h1 align="center">{{ room.label }}</h1><a class="navbar navbar-brand" href="/room/{{ room.id }}/collaborators"><h5>Collaborators</h5></a>
     <h4 align="center">System ID: {{ room.id }}</h4>
     <hr>
     <div class="chat-box">

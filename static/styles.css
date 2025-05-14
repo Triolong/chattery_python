@@ -54,3 +54,17 @@
 .message-text {
     text-indent: 30px;
 }
+
+.collaborator-link {
+    font-size: 24px;
+    color: grey;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.collaborator-link:hover {
+    font-size: 24px;
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}

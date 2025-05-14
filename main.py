@@ -108,6 +108,7 @@ def logout():
     logout_user()
     return redirect("/")
 
+
 @app.route('/profile/<int:user_id>')
 @login_required
 def profile(user_id):
@@ -120,24 +121,26 @@ def profile(user_id):
             try:
                 dict = json.load(json_file)
                 for i in dict.keys():
-                     try:
-                         if user_id in dict[i]:
-                             rooms_dict[f"{db_sess.query(Room).get(int(i))}"] = dict[i]
-                             rooms_list.append(db_sess.query(Room).get(int(i)))
-                     except ValueError:
-                         rooms_list = []
-                     try:
-                         col_am = len(dict[i]) if dict[i] is not None else 0
-                     except TypeError:
-                         col_am = 0
+                    try:
+                        if user_id in dict[i]:
+                            rooms_dict[f"{db_sess.query(Room).get(int(i))}"] = dict[i]
+                            rooms_list.append(db_sess.query(Room).get(int(i)))
+                    except ValueError:
+                        rooms_list = []
+                    try:
+                        col_am = len(dict[i]) if dict[i] is not None else 0
+                    except TypeError:
+                        col_am = 0
             except json.decoder.JSONDecodeError:
                 rooms_list = []
                 col_am = 0
 
     except FileNotFoundError:
-         print("JSON file for collaborators not found.")
+        print("JSON file for collaborators not found.")
 
-    return render_template("profile.html", title="Chattery - Profile", user=db_sess.query(User).get(user_id), rooms_list=rooms_list, collaborators_amount=col_am)
+    return render_template("profile.html", title="Chattery - Profile", user=db_sess.query(User).get(user_id),
+                           rooms_list=rooms_list, collaborators_amount=col_am)
+
 
 @app.route('/create_room', methods=["GET", "POST"])
 @login_required
@@ -146,7 +149,8 @@ def create_room():
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         if db_sess.query(Room).filter(Room.label == form.label.data).first():
-            return render_template("createroom.html", title="Chattery - Create a room", form=form, message="A room with such name already exists.")
+            return render_template("createroom.html", title="Chattery - Create a room", form=form,
+                                   message="A room with such name already exists.")
         room = Room(
             label=form.label.data,
             about=form.about.data,
@@ -192,6 +196,22 @@ def show_room(room_id):
                 sent_date=message_data[2]
             ))
     return render_template("showroom.html", title=room.label, messages=messages_list, room=room)
+
+
+@app.route("/room/<int:room_id>/collaborators")
+def collaborators_list(room_id):
+    db_sess = db_session.create_session()
+    room = db_sess.query(Room).get(room_id)
+    collab_list = []
+    try:
+        with open("data/rooms_id_collaborators.json", "r", encoding="utf-8") as json_file:
+            rooms_dict = json.load(json_file)
+        for collaborator_id in rooms_dict[str(room_id)]:
+            collab_list.append(db_sess.query(User).get(collaborator_id))
+    except FileNotFoundError:
+        print("collaborators file not found")
+    db_sess.close()
+    return render_template("collaborators.html", title=f"{room.label} - Collaborators", room=room, collab_list=collab_list)
 
 # ======================================================================================================================
 
