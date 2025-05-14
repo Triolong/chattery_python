@@ -12,4 +12,10 @@
         <button class="delete-user-button" name="add_usr_btn" type="submit">Delete collaborator</button>
     </form>
     <p>{{ message2 }}</p>
+        <form action="/handle_delete_room/{{ room.id }}" method="post">
+            <div class="inline-elements">
+                <button class="delete-user-button" name="delete_room_btn" type="submit">Delete room</button>
+                <p>WARNING: If you delete the room, you won't be able to recover it!</p>
+            </div>
+        </form>
 {% endblock %}

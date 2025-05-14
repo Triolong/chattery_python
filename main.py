@@ -310,6 +310,30 @@ def delete_collaborator(room_id):
                                message2="There is no such user.")
     return redirect(f"/room/{room_id}")
 
+
+@app.route("/handle_delete_room/<int:room_id>", methods=["GET", "POST"])
+@login_required
+def delete_room(room_id):
+    db_sess = db_session.create_session()
+    room = db_sess.query(Room).get(room_id)
+    db_sess.delete(room)
+    db_sess.commit()
+    db_sess.close()
+    with open("data/rooms_id_collaborators.json", "r+", encoding="utf-8") as json_file:
+        rooms_id_col = json.load(json_file)
+        del rooms_id_col[str(room_id)]
+        json_file.seek(0)
+        json.dump(rooms_id_col, json_file)
+        json_file.truncate()
+    with open("data/rooms_id_messages.json", "r+", encoding="utf-8") as json_file:
+        rooms_id_mes = json.load(json_file)
+        del rooms_id_mes[str(room_id)]
+        json_file.seek(0)
+        json.dump(rooms_id_mes, json_file)
+        json_file.truncate()
+    return redirect(f"/profile/{current_user.id}")
+
+
 @app.errorhandler(401)
 def not_authorized(error):
     return render_template("not_authorized.html", title="Chattery - Not Authorized.")
