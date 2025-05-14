@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ user.name }}</h1>
+    <hr>
+    <h3>{{ user.about }}</h3>
+    <h3>System ID: {{ user.id }}</h3>
+    <h2>Email: {{ user.email }}</h2>
+    {% if current_user.id == user.id %}
+        <h2>Rooms:</h2>
+        {% for room in rooms_list %}
+            <div class="container">
+                <a href="/room/{{ room.id }}" class="navbar navbar-brand"><h3>{{ room.label }}</h3></a>
+                <p>Collaborators: {{ collaborators_amount }}</p>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

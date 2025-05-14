@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 align="center">{{ room.label }}</h1><a class="navbar navbar-brand"><h5>Collaborators</h5></a>
+    <h4 align="center">System ID: {{ room.id }}</h4>
+    <hr>
+    <div class="chat-box">
+        {% for message in messages %}
+            <p><a class="message-author-link" href="/profile/{{ message.author.id }}">{{ message.author.name }}</a> on {{ message.sent_date }}</p>
+            <p class="message-text">{{ message.text }}</p>
+        {% endfor %}
+    </div>
+
+    <form action="/handle_send_button/{{ room.id }}" method="post">
+        <input class="message-input" type="text" name="message_inp" id="message_inp" placeholder="Input your message here.">
+        <button type="submit" class="send-button" id="send_btn">Send</button>
+    </form>
+{% endblock %}

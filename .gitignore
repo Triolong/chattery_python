@@ -1,0 +1,21 @@
+# Папка виртуального окружения (venv, .venv, env)
+venv/
+.venv/
+env/
+
+# Файлы IDE (PyCharm)
+.idea/
+__pycache__/
+*.py[cod]
+
+# Базы данных и временные файлы
+*.db
+*.sqlite
+*.json  # (если не хочешь загружать JSON-файлы с сообщениями)
+
+# Логи и кэш
+*.log
+*.cache
+
+# Файлы зависимостей (можно создать requirements.txt)
+pip-selfcheck.json
