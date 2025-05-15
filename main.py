@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, make_response, session, url_for, request
+from flask import Flask, render_template, redirect, make_response, session, url_for, request, jsonify
 import requests
 import sqlite3
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -11,9 +11,11 @@ import datetime
 
 from data.users import User
 from data.rooms import Room
-from data import db_session
+from data import db_session, users_api
 
 import json
+
+from flask_restful import reqparse, abort, Api, Resource
 
 
 class Message:
@@ -45,9 +47,95 @@ app = Flask(__name__)
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(
     days=7
 )
+api = Api(app)
 app.config['SECRET_KEY'] = "yandex_lyceum_secret_key"
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+def abort_if_user_not_found(user_id):
+    session = db_session.create_session()
+    news = session.query(User).get(user_id)
+    if not news:
+        abort(404, message=f"User {user_id} not found")
+    session.close()
+
+
+def abort_if_room_not_found(room_id):
+    session = db_session.create_session()
+    news = session.query(Room).get(room_id)
+    if not news:
+        abort(404, message=f"Room {room_id} not found")
+    session.close()
+
+
+class UsersResource(Resource):
+    def get(self, user_id):
+        abort_if_user_not_found(user_id)
+        session = db_session.create_session()
+        user = session.query(User).get(user_id)
+        return jsonify({"user": user.to_dict(only=("name", "email", "id"))})
+
+
+parser = reqparse.RequestParser()
+parser.add_argument("name", required=True)
+parser.add_argument("about", required=True)
+parser.add_argument("email", required=True)
+
+
+class UsersListResource(Resource):
+    def get(self):
+        session = db_session.create_session()
+        users = session.query(User).all()
+        return jsonify({"users": [item.to_dict(only=("name", "email", "id")) for item in users]})
+
+    def post(self):
+        args = parser.parse_args()
+        session = db_session.create_session()
+        user = User(
+            name=args["name"],
+            email=args["email"],
+            about=args["about"]
+        )
+        session.add(user)
+        session.commit()
+        session.close()
+        return jsonify({"id": user.id})
+
+
+class RoomsResource(Resource):
+    def get(self, room_id):
+        abort_if_room_not_found()
+        session = db_session.create_session()
+        user = session.query(Room).get(room_id)
+        return jsonify({"room": user.to_dict(only=("label", "about", "id"))})
+
+
+parser_rooms = reqparse.RequestParser()
+parser_rooms.add_argument("label", required=True)
+parser_rooms.add_argument("about", required=True)
+
+
+class RoomsListResource(Resource):
+    def get(self):
+        session = db_session.create_session()
+        rooms = session.query(Room).all()
+        return jsonify(
+            {"rooms":
+                 [{"label": item.label, "id": item.id} for item in rooms]}
+        )
+
+    def post(self):
+        args = parser.parse_args()
+        session = db_session.create_session()
+        room = Room(
+            label=args["label"],
+            about=args["about"]
+        )
+        session.add(room)
+        session.commit()
+        session.close()
+        return jsonify({"id": room.id})
 
 
 @login_manager.user_loader
@@ -341,4 +429,11 @@ def not_authorized(error):
 
 if __name__ == "__main__":
     db_session.global_init("db/users.db")
+    app.register_blueprint(users_api.blueprint)
+
+    api.add_resource(UsersListResource, '/api/users')
+    api.add_resource(UsersResource, '/api/users/<int:user_id>')
+    api.add_resource(RoomsListResource, "/api/rooms")
+    api.add_resource(RoomsResource, "/api/rooms/<int:room_id>")
+
     app.run("127.0.0.1", port=8081)
