@@ -5,6 +5,7 @@
     <div class="inline-elements">
         <a class="navbar navbar-brand" href="/room/{{ room.id }}/collaborators"><h5>Collaborators</h5></a>
         <a class="navbar navbar-brand" href="/room/{{ room.id }}/options"><h5>Options</h5></a>
+        <a class="navbar navbar-brand" href="/room/{{ room.id }}/upload_file"><h5>Send a file</h5></a>
     </div>
     <h4 align="center">System ID: {{ room.id }}</h4>
     <hr>
@@ -12,6 +13,9 @@
         {% for message in messages %}
             <p><a class="message-author-link" href="/profile/{{ message.author.id }}">{{ message.author.name }}</a> on {{ message.sent_date }}</p>
             <p class="message-text">{{ message.text }}</p>
+            {% if message.file %}
+                <a href="/{{ message.file }}" class="file-link">File</a>
+            {% endif %}
         {% endfor %}
     </div>
 

@@ -17,9 +17,13 @@ import json
 
 from flask_restful import reqparse, abort, Api, Resource
 
+import os
+import uuid
+import re
+
 
 class Message:
-    def __init__(self, text, author_id, sent_date=None):
+    def __init__(self, text, author_id, sent_date=None, file=None):
         self.text = text
         self.author_id = author_id
         if sent_date is None:
@@ -32,6 +36,8 @@ class Message:
             self.author = db_sess.query(User).get(author_id)
         finally:
             db_sess.close()
+        if file is not None:
+            self.file = file
 
 
 def get_room_messages(room_id):
@@ -47,10 +53,24 @@ app = Flask(__name__)
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(
     days=7
 )
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 api = Api(app)
 app.config['SECRET_KEY'] = "yandex_lyceum_secret_key"
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+ALLOWED_EXTENSIONS = {'.txt', '.pdf', '.png', '.jpg', '.jpeg', '.gif'}
+UPLOAD_FOLDER = "static/files"
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def file_is_allowed(filename):
+    return "." in filename and filename[filename.index("."):].lower() in ALLOWED_EXTENSIONS
+
+
+def secure_filename(filename):
+    filename = re.sub(r"[^\w.-]", '', filename)
+    return f"{uuid.uuid4().hex}_{filename}"
 
 
 def abort_if_user_not_found(user_id):
@@ -281,7 +301,8 @@ def show_room(room_id):
             messages_list.append(Message(
                 text=message_data[0],
                 author_id=message_data[1],
-                sent_date=message_data[2]
+                sent_date=message_data[2],
+                file=message_data[3] if len(message_data) > 3 else None
             ))
     return render_template("showroom.html", title=room.label, messages=messages_list, room=room)
 
@@ -309,6 +330,11 @@ def room_options(room_id):
     room = db_sess.query(Room).get(room_id)
     db_sess.close()
     return render_template("room_options.html", title=f"{room.label} - Options", room=room)
+
+
+@app.route("/room/<int:room_id>/upload_file")
+def room_file_upload(room_id):
+    return render_template("file_upload.html", title="Send a file", room_id=room_id)
 
 # ======================================================================================================================
 
@@ -422,9 +448,58 @@ def delete_room(room_id):
     return redirect(f"/profile/{current_user.id}")
 
 
+@app.route("/handle_file_upload/<int:room_id>", methods=["GET", "POST"])
+@login_required
+def upload_file(room_id):
+    file = request.files.get("file")
+    print(file.filename)
+    if file.filename == "":
+        return "<h1>The file hasn't been chosen!.</h1><br><h4>Try going back and choosing another file</h4>"
+    if file_is_allowed(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        message = Message(
+            text="",
+            author_id=current_user.id,
+            file=f"{app.config['UPLOAD_FOLDER']}/{filename}"
+        )
+        messages_list = []
+        messages_dict = {}
+        with open("data/rooms_id_messages.json") as json_file:
+            try:
+                messages_dict = json.load(json_file)
+                try:
+                    for message_data in messages_dict[str(room_id)]:
+                        messages_list.append(Message(
+                            text=message_data[0],
+                            author_id=message_data[1],
+                            sent_date=message_data[2],
+                            file=message_data[3] if len(message_data) > 3 else None
+                        ))
+                except KeyError:
+                    messages_list = []
+            except json.decoder.JSONDecodeError:
+                messages_list = []
+        with open("data/rooms_id_messages.json", "w", encoding="utf-8") as json_file:
+            try:
+                messages_dict[f"{room_id}"].append([message.text, message.author_id, message.sent_date, message.file])
+            except KeyError:
+                messages_dict[f"{room_id}"] = [[message.text, message.author_id, message.sent_date, message.file]]
+            json.dump(messages_dict, json_file)
+        return redirect(f"/room/{room_id}")
+    else:
+        return "<h1>The type of the file is not allowed.</h1><br><h4>Try going back and choosing another file</h4>"
+
+
 @app.errorhandler(401)
 def not_authorized(error):
     return render_template("not_authorized.html", title="Chattery - Not Authorized.")
+
+
+@app.errorhandler(413)
+def file_too_big(error):
+    return """<h1>The file is too big.</h1>
+                <h4>maximum size is 5 MB</h4>"""
 
 
 if __name__ == "__main__":

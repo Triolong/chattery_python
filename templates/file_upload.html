@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Upload the file</h1>
+    <form action="/handle_file_upload/{{ room_id }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit" class="add-user-button">Send</button>
+    </form>
+{% endblock %}
